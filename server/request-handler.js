@@ -15,13 +15,14 @@ this file and include it in basic-server.js so that it actually works.
 var qs = require('querystring');
 var url = require('url');
 
+var storage = {
+  results: []
+};
 
 var requestHandler = function(request, response) {
 
-  // console.log('Serving request type ' + request.method + ' for url ' + request.url);
+  console.log('Serving request type ' + request.method + ' for url ' + request.url);
   var headers = defaultCorsHeaders;
-
-  var statusCode = 404;
 
   // if (request.url === undefined) {
   //   response.statusCode = 404;
@@ -30,21 +31,38 @@ var requestHandler = function(request, response) {
   //   response.end(JSON.stringify({results: []}));
   // }
 
-  if (request.method === 'POST') {
-    response.statusCode = 201;
+
+  if (request.url === '/classes/messages' || request.url === '/send') {
+    if (request.method === 'POST') {
+      response.statusCode = 201;
+
+      headers['Content-Type'] = 'application/JSON';
+      request.on('data', function(chunk) {
+        storage.results.push(JSON.parse(chunk));
+      });
+      request.on('end', function() {
+        response.writeHead(response.statusCode, response.headers);
+        response.end(JSON.stringify(storage));
+      });
+
+    }
+
+    if (request.method === 'GET') {
+      response.statusCode = 200;
+
+      headers['Content-Type'] = 'application/JSON';
+      response.writeHead(response.statusCode, response.headers);
+      response.end(JSON.stringify(storage));
+
+    }
+  } else {
+    response.statusCode = 404;
 
     headers['Content-Type'] = 'application/JSON';
     response.writeHead(response.statusCode, response.headers);
-    response.end(JSON.stringify({results: []}));
+    response.end(JSON.stringify(storage));
   }
 
-  if (request.method === 'GET') {
-    response.statusCode = 200;
-    headers['Content-Type'] = 'application/JSON';
-    response.writeHead(response.statusCode, response.headers);
-    response.end(JSON.stringify({results: []}));
-
-  }
 
 
 };
